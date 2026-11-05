@@ -20,6 +20,10 @@ const lowEndDevice = (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
 const renderer = new THREE.WebGLRenderer({ antialias: !lowEndDevice });
 // Keep the live preview crisp without paying the 4× pixel cost of DPR 2.
 const PREVIEW_PIXEL_RATIO = Math.min(window.devicePixelRatio || 1, lowEndDevice ? 1.15 : 1.5);
+// Recording renders at the exact requested output dimensions. A 1:1 drawing
+// buffer avoids browser resampling while keeping the same renderer, lighting,
+// tone mapping, colour space, shadows, and anti-aliasing as the live preview.
+const RECORD_PIXEL_RATIO = 1;
 renderer.setPixelRatio(PREVIEW_PIXEL_RATIO);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -1114,12 +1118,12 @@ function layoutOverlays() {
 }
 
 /* ------------------------------------------------------------------
-   Frame size (locked 16:9 while recording)
+   Frame size (locked to the selected output while recording)
 ------------------------------------------------------------------ */
 let frameLock = null;
 function applySize() {
   if (frameLock) {
-    renderer.setPixelRatio(1);
+    renderer.setPixelRatio(RECORD_PIXEL_RATIO);
     renderer.setSize(frameLock.w, frameLock.h, false);
     canvas.style.width = '100%'; canvas.style.height = '100%'; canvas.style.objectFit = 'contain';
     camera.aspect = frameLock.w / frameLock.h;
@@ -1752,13 +1756,19 @@ function pickMime() {
   return list.find(t => MediaRecorder.isTypeSupported(t)) || '';
 }
 
+function recordingBitrate(w, h, fps) {
+  // Use a generous pixel-rate budget so fine paper text and scene textures
+  // retain the preview's clarity after MediaRecorder encoding.
+  return clamp(Math.round(w * h * fps * 0.28), 8e6, 80e6);
+}
+
 function startRecording() {
   if (rec.active) { endRecording(true); return; }
   if (!window.MediaRecorder || !canvas.captureStream) { recInfo.textContent = 'Recording is not supported in this browser. Try Chrome, Edge or Safari 17+.'; return; }
   if (!pages.length) return;
   const { w, h } = selFrame();
   const fps = (w > h && h <= 1440) ? 60 : 30;
-  const bps = clamp(w * h * fps * 0.22, 6e6, 60e6);
+  const bps = recordingBitrate(w, h, fps);
   if (audio.enabled) ensureAudio();
   rec.mime = pickMime();
   resetAll(true);
@@ -1888,8 +1898,13 @@ function finalizeRecording() {
 /* ------------------------------------------------------------------
    UI
 ------------------------------------------------------------------ */
-const ui = $('ui'), playBtn = $('playBtn'), resetBtn = $('resetBtn'), statusEl = $('status'), bar = $('bar'), countEl = $('count');
+const ui = $('ui'), showControlsBtn = $('showControls'), playBtn = $('playBtn'), resetBtn = $('resetBtn'), statusEl = $('status'), bar = $('bar'), countEl = $('count');
 function setStatus(msg) { statusEl.textContent = msg; }
+function setControlsHidden(hidden) {
+  ui.classList.toggle('is-hidden', hidden);
+  showControlsBtn.hidden = !hidden;
+  showControlsBtn.setAttribute('aria-expanded', String(!hidden));
+}
 function updateUI() {
   const total = pages.length;
   playBtn.textContent = rec.active ? '⏺ Recording…' : (playing ? '⏸ Pause' : (finished ? '↺ Replay' : '▶ Start'));
@@ -1904,10 +1919,9 @@ $('pdfInput').addEventListener('change', e => { loadPDF(e.target.files[0]); e.ta
 $('feat').addEventListener('input', () => { refreshFeatured(); updateUI(); });
 $('speed').addEventListener('input', e => { speed = parseFloat(e.target.value); $('speedVal').textContent = speed.toFixed(1) + '×'; });
 $('hold').addEventListener('input', e => { holdSec = parseFloat(e.target.value); $('holdVal').textContent = holdSec.toFixed(1) + ' s'; });
-$('collapse').addEventListener('click', () => {
-  ui.classList.toggle('min');
-  $('collapse').textContent = ui.classList.contains('min') ? '+' : '–';
-});
+$('collapse').addEventListener('click', () => setControlsHidden(true));
+showControlsBtn.addEventListener('click', () => setControlsHidden(false));
+window.addEventListener('keydown', e => { if (e.key === 'Escape' && !ui.classList.contains('is-hidden')) setControlsHidden(true); });
 $('cine').addEventListener('change', e => (cineOn = e.target.checked));
 $('capOn').addEventListener('change', e => (capOn = e.target.checked));
 recBtn.addEventListener('click', startRecording);
