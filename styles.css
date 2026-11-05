@@ -80,7 +80,7 @@
   select.txt { cursor: pointer; }
 
   @media (max-width: 600px) {
-    #ui { top: max(8px, env(safe-area-inset-top)); left: 8px; width: calc(100vw - 16px); max-height: min(78vh, 620px); padding: 11px 12px; border-radius: 14px; }
+    #ui { top: max(8px, env(safe-area-inset-top)); right: 8px; bottom: max(8px, env(safe-area-inset-bottom)); left: 8px; width: auto; height: auto; max-height: none; padding: 11px 12px calc(18px + env(safe-area-inset-bottom)); border-radius: 14px; overflow-y: auto; }
     #ui h1 { font-size: 15px; }
     #uiBody { padding-bottom: 2px; }
     .btn { min-height: 42px; }
