@@ -18,7 +18,8 @@ if (pdfjsReady) {
 const lowEndDevice = (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
   (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
 const renderer = new THREE.WebGLRenderer({ antialias: !lowEndDevice });
-// Keep the live preview crisp without paying the 4× pixel cost of DPR 2.
+// Keep the live preview crisp; applySize upgrades this to the selected
+// recording dimensions when the viewport is smaller than the output.
 const PREVIEW_PIXEL_RATIO = Math.min(window.devicePixelRatio || 1, lowEndDevice ? 1.15 : 1.5);
 // Recording renders at the exact requested output dimensions. A 1:1 drawing
 // buffer avoids browser resampling while keeping the same renderer, lighting,
@@ -1121,6 +1122,7 @@ function layoutOverlays() {
    Frame size (locked to the selected output while recording)
 ------------------------------------------------------------------ */
 let frameLock = null;
+let previewOutput = { w: 1080, h: 1920 };
 function applySize() {
   if (frameLock) {
     renderer.setPixelRatio(RECORD_PIXEL_RATIO);
@@ -1129,8 +1131,13 @@ function applySize() {
     camera.aspect = frameLock.w / frameLock.h;
   } else {
     canvas.style.objectFit = '';
-    renderer.setPixelRatio(PREVIEW_PIXEL_RATIO);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    // Keep the live preview's drawing buffer at least as large as the
+    // selected recording output in both axes. This prevents a sharp export
+    // from looking softer than the preview on high-density/mobile screens.
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const qualityRatio = Math.max(PREVIEW_PIXEL_RATIO, previewOutput.w / vw, previewOutput.h / vh);
+    renderer.setPixelRatio(qualityRatio);
+    renderer.setSize(vw, vh);
     camera.aspect = window.innerWidth / window.innerHeight;
   }
   camera.updateProjectionMatrix();
@@ -1925,7 +1932,10 @@ window.addEventListener('keydown', e => { if (e.key === 'Escape' && !ui.classLis
 $('cine').addEventListener('change', e => (cineOn = e.target.checked));
 $('capOn').addEventListener('change', e => (capOn = e.target.checked));
 recBtn.addEventListener('click', startRecording);
-fmtSel.addEventListener('change', () => { if (prevFrame.checked && !rec.active) restoreFrame(); });
+fmtSel.addEventListener('change', () => {
+  previewOutput = selFrame();
+  if (prevFrame.checked && !rec.active) restoreFrame(); else if (!rec.active) applySize();
+});
 prevFrame.addEventListener('change', () => { if (!rec.active) restoreFrame(); });
 
 $('sndOn').addEventListener('change', e => {
