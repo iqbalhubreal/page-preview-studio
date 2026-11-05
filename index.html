@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Page Preview Studio</title>
+<link rel="stylesheet" href="styles.css" />
+
+<!-- PDF.js (renders PDF pages to canvases) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<!-- Three.js via import map -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div id="ui">
+  <div id="uiHead"><h1>📄 Page Preview Studio</h1><button id="collapse" title="Collapse panel">–</button></div>
+  <div id="uiBody">
+    <details open>
+      <summary>1 · Your pages</summary>
+      <label class="btn alt" for="pdfInput">⬆ Upload PDF</label>
+      <input type="file" id="pdfInput" accept="application/pdf" hidden />
+      <div class="row"><span>Show</span><input type="text" id="feat" class="txt" value="1-6" placeholder="e.g. 1-6 or 1,4,7-9" style="margin:0" /></div>
+      <div class="note">Pages listed above get a full close-up. All other pages quickly flip past so viewers see how much is included.</div>
+      <div class="row"><span>Hold</span><input type="range" id="hold" min="1" max="10" step="0.5" value="3" /><output id="holdVal">3.0 s</output></div>
+      <div class="row"><span>Speed</span><input type="range" id="speed" min="0.5" max="2" step="0.1" value="1" /><output id="speedVal">1.0×</output></div>
+      <div class="two">
+        <button id="playBtn" class="btn">▶ Start</button>
+        <button id="resetBtn" class="btn ghost">↺ Reset</button>
+      </div>
+    </details>
+
+    <details open>
+      <summary>2 · Title &amp; closing card</summary>
+      <input type="text" id="tTitle" class="txt" placeholder="Product name (title card)" />
+      <input type="text" id="tTag" class="txt" placeholder="Tagline, e.g. Digital planner pages" />
+      <input type="text" id="tOffer" class="txt" placeholder="Offer, e.g. ₹499 · Instant download" />
+      <input type="text" id="tCta" class="txt" placeholder="Call to action, e.g. Link in bio" />
+      <div class="note">Leave Title empty to skip the title card. The closing card appears only if Offer or Call to action is filled.</div>
+    </details>
+
+    <details open>
+      <summary>3 · Record video</summary>
+      <select id="fmtSel" class="txt">
+        <option value="1080x1920" selected>Vertical 9:16 · 1080×1920 (Reels / Shorts / TikTok)</option>
+        <option value="720x1280">Vertical 9:16 · 720×1280 (smaller file)</option>
+        <option value="1080x1350">Portrait 4:5 · 1080×1350 (Instagram feed)</option>
+        <option value="1080x1080">Square 1:1 · 1080×1080</option>
+        <option value="1920x1080">Wide 16:9 · 1920×1080 (YouTube)</option>
+        <option value="2560x1440">Wide 16:9 · 2560×1440</option>
+        <option value="3840x2160">Wide 16:9 · 4K</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="prevFrame" /> Preview this frame shape on screen</label>
+      <button id="recBtn" class="btn rec">⏺ Record preview video</button>
+      <div id="recInfo">Records silently (add your voiceover in your editor), then saves the video and a timing sheet listing when each page appears.</div>
+    </details>
+
+    <details>
+      <summary>Camera &amp; Light</summary>
+      <label class="chk"><input type="checkbox" id="cine" checked /> 🎥 Cinematic camera while playing</label>
+      <label class="chk"><input type="checkbox" id="capOn" /> Show “Page 3 of 12” label during holds</label>
+      <div class="chips" id="viewChips">
+        <button data-view="overview">Overview</button>
+        <button data-view="table">Table</button>
+        <button data-view="top">Top</button>
+        <button data-view="side">Side</button>
+        <button data-view="desk">Desk</button>
+      </div>
+      <div class="chips" id="lightChips"></div>
+      <label class="chk"><input type="checkbox" id="lampsOn" /> 💡 Lamps on (click a lamp too)</label>
+    </details>
+
+    <details>
+      <summary>Sound (off by default)</summary>
+      <label class="chk"><input type="checkbox" id="sndOn" /> Paper sound effects (also recorded in the video)</label>
+      <div class="row"><span>Volume</span><input type="range" id="vol" min="0" max="1" step="0.05" value="0.8" /></div>
+      <label class="chk"><input type="checkbox" id="ambOn" /> Room ambience (birds / crickets)</label>
+      <label class="chk"><input type="checkbox" id="scrAud" /> Play screen video audio</label>
+    </details>
+
+    <details>
+      <summary>Side screens (PC &amp; tablet)</summary>
+      <div class="two">
+        <button id="pcBtn" class="btn alt">🖥 PC video</button>
+        <button id="tabBtn" class="btn alt">📱 Tablet video</button>
+      </div>
+      <div class="note">Decor for the wide opening and closing shots. Click a screen in the room to load or pause a video.</div>
+    </details>
+
+    <div id="status">Demo pages loaded. Upload your PDF, fill in the cards and press Record.</div>
+    <div id="progress"><div id="bar"></div></div>
+    <div id="count"></div>
+  </div>
+</div>
+<input type="file" id="pcVideo" accept="video/*" hidden />
+<input type="file" id="tabVideo" accept="video/*" hidden />
+
+<div id="hint">Click the page stack to start / pause · Drag to orbit · Scroll to zoom</div>
+<div id="clickLabel">Click me ✨</div>
+<div id="dropOverlay">Drop your PDF here</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
